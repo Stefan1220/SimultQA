@@ -1,0 +1,3 @@
+[submodule "bertserini"]
+	path = bertserini
+	url = https://github.com/rsvp-ai/bertserini.git
