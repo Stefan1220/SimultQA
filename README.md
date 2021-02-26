@@ -1,4 +1,8 @@
-# SimultQA
+# SiMultQA
+
+## Introduction
+In this project, we propose SiMultQA: **S**ystem-level hybr**i**d **Mul**ti-Hop reasoning for complex **Q**uestion **A**nswering that can simultaneously leverage knnowledge from KB and Text to answer complex questions.
+
 
 ## Data Format for Training Data
 ```
