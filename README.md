@@ -1,7 +1,7 @@
 # SiMultQA
 
 ## Introduction
-In this project, we propose SiMultQA: **S**ystem-level hybr**i**d **Mult**i-Hop reasoning for complex **Q**uestion **A**nswering that can simultaneously perform multi-hop reasoning over KB and Text to answer complex questions and combine the advantages of both QA systems, e.g., complex reasoning in KBQA system and answer coverage in Text QA system. 
+In this project, we propose SiMultQA: **S**ystem-level hybr**i**d **Mult**i-Hop reasoning for complex **Q**uestion **A**nswering that can simultaneously perform multi-hop reasoning process over KB and Text to answer complex questions and combine the advantages of both QA systems, e.g., complex reasoning in KBQA system and answer coverage in Text QA system. 
 
 
 ## Data Format for Training Data
