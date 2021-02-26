@@ -1,5 +1,26 @@
 # SimultQA
 
+## Data Format
+```
+HotpotQA: []
+CWQ: []
+```
+
+## Retriever Training
+```
+CUDA_VISIBLE_DEVICES=0,1 python -u ./retriever/run_retriever.py \
+--train=True \
+--train_kb_dir='../data/cwq_train_cand_paths.pkl' \
+--train_text_dir='../data/cand_paragraphs_iclr_tfidf_hyperlink.pkl' \
+--output_dir='../saved_models' \
+--output_suffix='hybrid' \
+--lr=3e-5 --epochs=3 \
+--train_batch_size=2 --grad_acc_steps=1 \
+--num_bm_cands=20 --num_hy_cands=10 \
+--num_kb_cands=30 \
+--chunk_size=10 \
+--close_tqdm=True
+```
 
 ## Retriever Inference
 ```
