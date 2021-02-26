@@ -1,9 +1,9 @@
 # SimultQA
 
-## Data Format
+## Data Format for Training Data
 ```
-HotpotQA: []
-CWQ: []
+HotpotQA: {'id': ..., 'question': ..., 'answer': ...,'supporting_facts_hop1': [title, gold_paragraph], 'supporting_facts_hop2': [title, gold_paragraph], 'bm_candidates': [title, paragraph] * 100, 'hyperlink_candidates': [title, paragraph] * 100}
+CWQ: {'gold_hop1': [path, [mid]],'gold_hop2': [ path, [mid] ], 'cand_hop1': [ path, [mid] ] * N, 'cand_hop2': [ path, [mid] ] * N , 'answers': [mid1,mid2 ...] }
 ```
 
 ## Retriever Training
