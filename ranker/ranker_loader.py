@@ -65,9 +65,10 @@ def find_span(x, y):
 
 class CWQRankerDatset(Dataset):
     def __init__(self, kb_data_path, text_data_path,
-                 train=False, num_kb_samples=20, num_text_samples=20):
+                 train=False, weak_train=False, num_kb_samples=20, num_text_samples=20):
 
         self.train = train
+        self.weak_train = weak_train
         self.num_kb_samples = num_kb_samples
         self.num_text_samples = num_text_samples
 
@@ -116,9 +117,12 @@ class CWQRankerDatset(Dataset):
                     if temp_hop2 != '':
                         hop2_kb_cands.append(temp_hop2)
 
-            num_type1 = self.num_kb_samples // 3
-            num_type2 = self.num_kb_samples // 3
-            num_type3 = self.num_kb_samples - (num_type1 + num_type2)
+            assert len(hop1_kb_cands) == num_kb_samples
+            assert len(hop2_kb_cands) == num_kb_samples
+
+            num_type1 = num_kb_samples // 3
+            num_type2 = num_kb_samples // 3
+            num_type3 = num_kb_samples - (num_type1 + num_type2)
 
             # gold 1Hop + random 2Hop
             type1_samples = []
@@ -150,20 +154,31 @@ class CWQRankerDatset(Dataset):
 
             kb_samples = type1_samples + type2_samples + type3_samples
             kb_labels = type1_labels + type2_labels + type3_labels
+            assert len(kb_samples) == num_kb_samples
 
             ## Sample text negative reasoning paths for ranker training
-            hop1_text_cands = [x[1] for x in self.text_data[idx]['candidate_facts_hop1']]  # ['title', 'paragraph']
-            hop2_text_cands = [x[1] for x in self.text_data[idx]['candidate_facts_hop2']]
+            hop1_text_cands = [x for x in self.text_data[idx]['candidate_facts_hop1']]  # [title, paragraph, score_1, score_2]
+            hop2_text_cands = [x for x in self.text_data[idx]['candidate_facts_hop2']]
             num_text_samples = self.num_text_samples
             
+            def text_score():
+                return
+
             # random 1Hop + random 2Hop
             text_samples = []
             text_labels = []
             while len(text_samples) < num_text_samples:
                 rand_hop1 = random.choice(hop1_text_cands)
                 rand_hop2 = random.choice(hop1_text_cands)
-                text_samples.append("{} {}".format(rand_hop2, rand_hop2))
-                text_labels.append(0)
+                text_samples.append("{} {}".format(rand_hop2[1], rand_hop2[1]))
+                if not self.weak_train:
+                    text_labels.append(0)
+                else:
+                    if 
+                    text_labels.append(0)
+
+            
+            assert len(text_samples) == num_text_samples
 
             all_samples = [gold_kb_path] + kb_samples + text_samples
             all_labels = np.array([1.] + kb_labels + text_labels)
@@ -275,7 +290,7 @@ class CWQRankerDatset(Dataset):
 
 class HotpotQARankerDataset(Dataset):
     def __init__(self, text_data_path, kb_data_path,
-                 train=False, num_text_samples=20, num_kb_samples=20):
+                 train=False, weak_labels=False, num_text_samples=20, num_kb_samples=20):
 
         self.train = train
         self.num_text_samples = num_text_samples
@@ -328,6 +343,9 @@ class HotpotQARankerDataset(Dataset):
                     if gold_answer.lower() not in temp_hop2[1].lower() and hop2_title != temp_hop2[0]:
                         hyper_cands.append(temp_hop2)
 
+            assert len(tfidf_cands) == num_text_samples
+            assert len(hyper_cands) == num_text_samples
+
             num_type1 = num_text_samples // 2
             num_type2 = num_text_samples - num_type1
 
@@ -351,6 +369,7 @@ class HotpotQARankerDataset(Dataset):
 
             text_samples = type1_samples + type2_samples
             text_labels = type1_labels + type2_labels
+            assert len(text_samples) == num_text_samples
 
             # Sample negative kb paths
             num_kb_samples = self.num_kb_samples
@@ -369,6 +388,8 @@ class HotpotQARankerDataset(Dataset):
                     if len(temp_data) > 0:
                         kb_samples.append(temp_data[random.randint(0, len(temp_data)-1)][0])
                         kb_labels.append(0)
+
+            assert len(kb_samples) == num_kb_samples
 
             all_samples = [gold_text_path] + text_samples + kb_samples
             all_labels = np.array([1.] + text_labels + kb_labels)

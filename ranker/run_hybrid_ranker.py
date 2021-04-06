@@ -57,7 +57,7 @@ class HybridRankerModel(nn.Module):
 
     def loss(self, list_logits, list_labels):
         # [B, N]
-        return -torch.mean(F.softmax(list_labels, 1) * F.log_softmax(list_logits))
+        return -torch.sum(list_labels * F.log_softmax(list_logits, dim=1), 1).mean()
 
     def forward(
             self,
@@ -97,7 +97,13 @@ class HybridRankerModel(nn.Module):
         if reason_paths_labels is None: # for testing
             loss = 0
         else: # for training
-            loss = self.loss(cand_path_scores, reason_paths_labels)
+            try:
+                loss = self.loss(cand_path_scores, reason_paths_labels)
+            except Exception as e:
+                print(e)
+                print(cand_path_scores.shape, reason_paths_labels.shape)
+                print(cand_path_repr.shape, cand_path_input_ids.shape)
+                exit()
 
         return {'loss': loss, 'cand_scores': cand_path_scores}
 
@@ -280,10 +286,10 @@ def main():
     # model.load_state_dict(torch.load(path))
 
     # Freeze the first 9 layers of BERT
-    # modules = [model.encoder.embeddings, model.encoder.encoder.layer[:9]]
-    # for module in modules:
-    #     for param in module.parameters():
-    #         param.requires_grad = False
+    modules = [model.encoder.embeddings, model.encoder.encoder.layer[:9]]
+    for module in modules:
+        for param in module.parameters():
+            param.requires_grad = False
 
     if args.num_gpu > 1:
         model = nn.DataParallel(model)
@@ -330,7 +336,7 @@ def main():
                     hpqa_sum_loss.append(hpqa_train_metrics['loss'])
                     loss = hpqa_train_metrics['loss']
 
-                print(loss)
+                # print(loss)
 
                 if (step + 1) % args.print_step_interval == 0:
                     print('Epoch={}\tStep={} \tTrain CWQ loss={:.4f} HPQA loss={:.4f} Total loss={:.4f} at {}'.format(
