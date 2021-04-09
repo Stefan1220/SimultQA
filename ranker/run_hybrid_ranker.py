@@ -52,8 +52,8 @@ class HybridRankerModel(nn.Module):
         self.args = args
         self.encoder = BertModel.from_pretrained('bert-base-uncased')
         self.hidden_size = hid
-        self.candidate_net = nn.Sequential(nn.Linear(self.hidden_size, 1))
-
+        self.candidate_net = nn.Linear(self.hidden_size, 1)
+        nn.init.xavier_uniform_(self.candidate_net.weight)
 
     def loss(self, list_logits, list_labels):
         # [B, N]
@@ -97,13 +97,14 @@ class HybridRankerModel(nn.Module):
         if reason_paths_labels is None: # for testing
             loss = 0
         else: # for training
-            try:
-                loss = self.loss(cand_path_scores, reason_paths_labels)
-            except Exception as e:
-                print(e)
-                print(cand_path_scores.shape, reason_paths_labels.shape)
-                print(cand_path_repr.shape, cand_path_input_ids.shape)
-                exit()
+            loss = self.loss(cand_path_scores, reason_paths_labels)
+            # try:
+            #     loss = self.loss(cand_path_scores, reason_paths_labels)
+            # except Exception as e:
+            #     print(e)
+            #     print(cand_path_scores.shape, reason_paths_labels.shape)
+            #     print(cand_path_repr.shape, cand_path_input_ids.shape)
+            #     exit()
 
         return {'loss': loss, 'cand_scores': cand_path_scores}
 
@@ -245,8 +246,10 @@ def main():
     parser.add_argument('--cwq_kb_sample',type=int, default=10)
     parser.add_argument('--hpqa_text_sample',type=int, default=10)
     parser.add_argument('--hpqa_kb_sample',type=int, default=10)
-
     parser.add_argument('--train_batch_size', type=int, default=5)
+
+    parser.add_argument('--weak_train', type='bool', default=False)
+    parser.add_argument('--joint_rank', type='bool', default=False)
 
     args = parser.parse_args()
     print(args)
@@ -255,6 +258,8 @@ def main():
     train_cwq_set = CWQRankerDatset(kb_data_path=args.cwq_kb_path,
                                     text_data_path=args.cwq_text_path,
                                     train=True, 
+                                    weak_train=args.weak_train,
+                                    joint_rank=args.joint_rank,
                                     num_kb_samples=args.cwq_kb_sample, 
                                     num_text_samples=args.cwq_text_sample)
     train_cwq_loader = DataLoader(train_cwq_set, 
@@ -264,6 +269,8 @@ def main():
     train_hpqa_set = HotpotQARankerDataset(text_data_path=args.hpqa_text_path,
                                            kb_data_path=args.hpqa_kb_path,
                                            train=True, 
+                                           weak_train=args.weak_train,
+                                           joint_rank=args.joint_rank,
                                            num_kb_samples=args.hpqa_kb_sample, 
                                            num_text_samples=args.hpqa_text_sample)
     train_hpqa_loader = DataLoader(train_hpqa_set, 
@@ -322,17 +329,28 @@ def main():
         train_cwq_iter = iter(train_cwq_loader)
         train_hpqa_iter = iter(train_hpqa_loader)
         with tqdm(total=num_iter, desc=f'Epoch {epoch}/{args.epochs}', unit='batch', disable=args.close_tqdm) as pbar:
+
             for step in range(num_iter):
+
                 if np.random.rand() > 0.5:
                     # batch, train_kb_iter = get_iter_batch(train_kb_iter, train_kb_loader)
                     cur_cwq_batch, train_cwq_iter = get_iter_batch(train_cwq_iter, train_cwq_loader)
-                    cwq_train_metrics = train(args, cur_cwq_batch, model, tokenizer, optimizer, scheduler)
+                    try:
+                        cwq_train_metrics = train(args, cur_cwq_batch, model, tokenizer, optimizer, scheduler)
+                    except Exception as e:
+                        print(e)
+                        continue
                     cwq_sum_loss.append(cwq_train_metrics['loss'])
                     loss = cwq_train_metrics['loss']
+
                 else:
                     # batch, train_text_iter = get_iter_batch(train_text_iter, train_text_loader)
                     cur_hpqa_batch, train_hpqa_iter = get_iter_batch(train_hpqa_iter, train_hpqa_loader)
-                    hpqa_train_metrics = train(args, cur_hpqa_batch, model, tokenizer, optimizer, scheduler)
+                    try:
+                        hpqa_train_metrics = train(args, cur_hpqa_batch, model, tokenizer, optimizer, scheduler)
+                    except Exception as e:
+                        print(e)
+                        continue
                     hpqa_sum_loss.append(hpqa_train_metrics['loss'])
                     loss = hpqa_train_metrics['loss']
 
